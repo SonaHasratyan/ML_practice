@@ -79,7 +79,7 @@ class GMM:
 
             # gamma_mtrx[i] /= gamma_mtrx[i].sum()
 
-        gamma_mtrx = gamma_mtrx / gamma_mtrx.sum(axis=1) .reshape(-1, 1)
+        gamma_mtrx = gamma_mtrx / gamma_mtrx.sum(axis=1).reshape(-1, 1)
 
         return gamma_mtrx
 
@@ -96,7 +96,9 @@ class GMM:
             N_k = gamma_mtrx[:, k].shape[0]
             mean_arr[k] = (gamma_mtrx[:, k].T @ X) / N_k
             cov_arr[k] = (
-                ((X - mean_arr[k].T) * gamma_mtrx[:, k].reshape(-1,1)).T @ (X - mean_arr[k].T) / N_k
+                ((X - mean_arr[k].T) * gamma_mtrx[:, k].reshape(-1, 1)).T
+                @ (X - mean_arr[k].T)
+                / N_k
             )
             pi_arr[k] = X.shape[1] / N_k
 
