@@ -32,7 +32,6 @@ class _SpectralClustering:
 
         return self
 
-
     def fit_predict(self, X):
         self.m = X.shape[0]
         self.__init_matrices(X)
@@ -54,17 +53,24 @@ class _SpectralClustering:
                 j = i + _j
                 if i == j:
                     continue
-                self.W[i][j] = np.exp(-(np.linalg.norm(X[i] - X[j])))
+                self.W[i][j] = np.linalg.norm(X[i] - X[j])
+                self.W[j][i] = self.W[i][j]
 
+            min_els = []
+            min_indices = []
             for _ in range(self.n_neighbors):
-                max_el = max(self.W[i])
-                max_ind = np.where(self.W[i] == max_el)[0][0]
-                self.W[max_ind][i] = max_el
-                self.W[i][max_ind] = 0
 
-            # todo: v
-            self.W[:, i] /= sum(self.W[:, i]) ** 2
-            self.W[i] = self.W[:, i]
+                min_el = min(self.W[i][self.W[i] > 0])
+                if min_el:
+                    min_els.append(min_el)
+                    min_indices.append(np.where(self.W[i] == min_els[-1])[0][0])
+                    self.W[i][min_indices[-1]] = 0
+
+            self.W[i] = np.zeros(self.W[i].shape)
+            self.W[i][min_indices] = min_els
+            sigma = sum(self.W[i]) ** 2
+            for ind in min_indices:
+                self.W[i][ind] = np.exp(-self.W[i][ind] / sigma)
 
             self.D[i][i] = sum(self.W[i])
 
@@ -75,7 +81,8 @@ class _SpectralClustering:
 
         self.L_sym = np.identity(self.m) - D_minus_sqrt @ self.W @ D_minus_sqrt
 
-        self.U = np.linalg.eigh(self.L_sym)[1][:, : self.n_clusters]
+        eigvals, eigvecs = np.linalg.eigh(self.L_sym)
+        self.U = eigvecs[:, np.argsort(eigvals)[1: self.n_clusters + 1]]
         self.T = np.array(
             [
                 self.U[i] / np.sqrt(sum(np.square(self.U[i])))
@@ -84,11 +91,11 @@ class _SpectralClustering:
         )
 
 
-_sc = _SpectralClustering(n_neighbors=15)
-# sc = SpectralClustering(4, n_neighbors=7)
-
-
 M = 1000
+_sc = _SpectralClustering(n_neighbors=M // 13)
+# sc = SpectralClustering(4, n_neighbors=M // 13, affinity="nearest_neighbors")
+
+
 X_circles, y_circles = make_circles(
     n_samples=M, noise=0.02, factor=0.8, random_state=78
 )
