@@ -59,7 +59,6 @@ class _SpectralClustering:
             min_els = []
             min_indices = []
             for _ in range(self.n_neighbors):
-
                 min_el = min(self.W[i][self.W[i] > 0])
                 if min_el:
                     min_els.append(min_el)
@@ -82,7 +81,7 @@ class _SpectralClustering:
         self.L_sym = np.identity(self.m) - D_minus_sqrt @ self.W @ D_minus_sqrt
 
         eigvals, eigvecs = np.linalg.eigh(self.L_sym)
-        self.U = eigvecs[:, np.argsort(eigvals)[1: self.n_clusters + 1]]
+        self.U = eigvecs[:, np.argsort(eigvals)[1 : self.n_clusters + 1]]
         self.T = np.array(
             [
                 self.U[i] / np.sqrt(sum(np.square(self.U[i])))
@@ -126,7 +125,9 @@ plt.show()
 
 # --------------BLOBS--------------
 
-X_blobs, y_blobs = make_blobs(M, n_features=4, random_state=78, cluster_std=0.6, centers=4)
+X_blobs, y_blobs = make_blobs(
+    M, n_features=4, random_state=78, cluster_std=0.6, centers=4
+)
 plt.figure(figsize=(16, 8))
 plt.scatter(X_blobs[:, 0], X_blobs[:, 1], c=y_blobs)
 plt.show()
