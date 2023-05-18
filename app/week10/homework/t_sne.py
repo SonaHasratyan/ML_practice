@@ -1,4 +1,6 @@
 import numpy as np
+from sklearn.datasets import make_blobs
+import matplotlib.pyplot as plt
 
 
 class TSNE:
@@ -29,14 +31,14 @@ class TSNE:
         self.X = X
         self.m = self.X.shape[0]
         self.__compute_variances()
-        self.__fill_affinity()
+        self.__compute_affinity()
         self.__init_y()
 
     def fit_transform(self, X):
         self.X = X
         self.m = self.X.shape[0]
         self.__compute_variances()
-        self.__fill_affinity()
+        self.__compute_affinity()
         self.__init_y()
 
         for i in range(self.n_iter):
@@ -45,7 +47,7 @@ class TSNE:
             # todo v
             self.y = self.y + self.momentum * grad + self.learning_rate * (self.y)
 
-    def __fill_affinity(self):
+    def __compute_affinity(self):
         self.affinity = np.zeros((self.m, self.m))
         for i in range(self.m):
             for j in range(self.m):
@@ -73,7 +75,8 @@ class TSNE:
         self.variances = np.full((self.m, self.m), fill_value=self.perplexity)
 
     def __init_y(self):
-        self.y = np.random.normal(loc=0.0, scale=(10 ** (-4)) * np.eye(self.m))
+        # todo v: * np.eye?
+        self.y = np.random.normal(loc=0.0, scale=10 ** (-4), size=self.m)
 
     def __compute_similarity(self):
         self.similarity = np.zeros((self.m, self.m))
@@ -90,7 +93,7 @@ class TSNE:
             self.similarity[i] /= sum(self.similarity[i])
 
     def __compute_grad(self):
-        grad = np.array(self.m)
+        grad = np.zeros(self.m)
         for i in range(self.m):
             y_diff = np.full(self.m, self.y[i]) - self.y
             grad[i] = 4 * sum(
@@ -100,3 +103,21 @@ class TSNE:
             )
 
         return grad
+
+
+# --------------BLOBS--------------
+M = 100
+X_blobs, y_blobs = make_blobs(
+    M, n_features=4, random_state=78, cluster_std=0.6, centers=4
+)
+plt.figure(figsize=(16, 8))
+plt.scatter(X_blobs[:, 0], X_blobs[:, 1], c=y_blobs)
+plt.show()
+
+tsne = TSNE()
+tsne.fit_transform(X_blobs)
+_y_blobs_pred = tsne.y
+
+plt.figure(figsize=(16, 8))
+plt.scatter(X_blobs[:, 0], X_blobs[:, 1], c=_y_blobs_pred)
+plt.show()
