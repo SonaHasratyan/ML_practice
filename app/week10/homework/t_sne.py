@@ -114,7 +114,7 @@ plt.figure(figsize=(16, 8))
 plt.scatter(X_blobs[:, 0], X_blobs[:, 1], c=y_blobs)
 plt.show()
 
-tsne = TSNE()
+tsne = TSNE(n_components=4)
 tsne.fit_transform(X_blobs)
 _y_blobs_pred = tsne.y
 
