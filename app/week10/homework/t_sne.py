@@ -6,7 +6,7 @@ class TSNE:
         self,
         n_components=2,
         perplexity=30.0,
-        learning_rate="auto",
+        learning_rate=0.03,
         momentum=1e-07,
         n_iter=100,
     ):
