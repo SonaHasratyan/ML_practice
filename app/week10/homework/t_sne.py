@@ -60,7 +60,7 @@ class _TSNE:
                 self.affinity[i][j] = -(np.linalg.norm(self.X[i] - self.X[j]) ** 2)
 
             sigma_i = self.__binary_search_sigma_i(self.affinity[i])
-            self.affinity[i] = np.exp(self.affinity[i] / (2 * (sigma_i ** 2)))
+            self.affinity[i] = np.exp(self.affinity[i] / (2 * (sigma_i**2)))
             self.affinity[i] /= sum(self.affinity[i])
 
         for i in range(self.m):
@@ -84,10 +84,6 @@ class _TSNE:
         affinity /= sum(affinity)
 
         perp = self.__perp(affinity)
-
-        # todo: close v
-        if np.isnan(perp):
-            print("SH")
 
         if perp > self.perplexity:
             upper_bound = tmp_sigma
