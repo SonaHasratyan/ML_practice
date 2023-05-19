@@ -8,8 +8,8 @@ class _TSNE:
         self,
         n_components=2,
         perplexity=30.0,
-        learning_rate=0.03,
-        momentum=1e-07,
+        learning_rate=100,
+        momentum=0.5,
         n_iter=100,
     ):
         self.n_components = n_components
@@ -45,8 +45,8 @@ class _TSNE:
             prev_y = self.y.copy()
             self.y = (
                 self.y
-                + self.momentum * grad
-                + self.learning_rate * (self.y - self.prev_y)
+                + self.learning_rate * grad
+                + self.momentum * (self.y - self.prev_y)
             )
             self.prev_y = prev_y
 
@@ -60,7 +60,7 @@ class _TSNE:
                 self.affinity[i][j] = -(np.linalg.norm(self.X[i] - self.X[j]) ** 2)
 
             sigma_i = self.__binary_search_sigma_i(self.affinity[i])
-            self.affinity[i] = np.exp(self.affinity[i] / (2 * (sigma_i**2)))
+            self.affinity[i] = np.exp(self.affinity[i] / (2 * (sigma_i ** 2)))
             self.affinity[i] /= sum(self.affinity[i])
 
         for i in range(self.m):
@@ -77,7 +77,7 @@ class _TSNE:
         return 2 ** (-sum(affinity * np.log2(affinity)))
 
     def __binary_search_sigma_i(
-        self, row_i, lower_bound=1e-10, upper_bound=1e10, eps=1e-8
+        self, row_i, lower_bound=1e-5, upper_bound=1e5, eps=1e-8
     ):
         tmp_sigma = (lower_bound + upper_bound) / 2
         affinity = np.exp(row_i / (2 * (tmp_sigma**2)))
@@ -100,7 +100,6 @@ class _TSNE:
         return self.__binary_search_sigma_i(row_i, lower_bound, upper_bound, eps)
 
     def __init_y(self):
-        # todo v: * np.eye?
         self.y = np.random.normal(loc=0.0, scale=10 ** (-4), size=self.m)
         self.prev_y = np.zeros(self.m)
 
@@ -127,7 +126,6 @@ class _TSNE:
                 * y_diff
                 * ((1 + np.linalg.norm(y_diff) ** 2) ** (-1))
             )
-
         return grad
 
 
