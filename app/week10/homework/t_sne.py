@@ -1,6 +1,7 @@
 import numpy as np
-from sklearn.datasets import make_blobs
-import matplotlib.pyplot as plt
+from sklearn.datasets import load_digits
+# from sklearn.metrics import pairwise_distances
+from sklearn.manifold import TSNE
 
 
 class _TSNE:
@@ -10,7 +11,7 @@ class _TSNE:
         perplexity=30.0,
         learning_rate=100,
         momentum=0.5,
-        n_iter=100,
+        n_iter=248,
     ):
         self.n_components = n_components
         self.perplexity = perplexity
@@ -45,10 +46,12 @@ class _TSNE:
             prev_y = self.y.copy()
             self.y = (
                 self.y
-                + self.learning_rate * grad
+                - self.learning_rate * grad
                 + self.momentum * (self.y - self.prev_y)
             )
             self.prev_y = prev_y
+
+        return self.y
 
     def __compute_affinity(self):
         self.affinity = np.zeros((self.m, self.m))
@@ -96,8 +99,8 @@ class _TSNE:
         return self.__binary_search_sigma_i(row_i, lower_bound, upper_bound, eps)
 
     def __init_y(self):
-        self.y = np.random.normal(loc=0.0, scale=10 ** (-4), size=self.m)
-        self.prev_y = np.zeros(self.m)
+        self.y = 1e-4 * np.random.randn(self.m, self.n_components)
+        self.prev_y = np.zeros(self.y.shape)
 
     def __compute_similarity(self):
         self.similarity = np.zeros((self.m, self.m))
@@ -114,30 +117,23 @@ class _TSNE:
             self.similarity[i] /= sum(self.similarity[i])
 
     def __compute_grad(self):
-        grad = np.zeros(self.m)
+        grad = np.zeros(self.y.shape)
         for i in range(self.m):
-            y_diff = np.full(self.m, self.y[i]) - self.y
-            grad[i] = 4 * sum(
+            y_diff = self.y[i] - self.y
+            grad[i] = 4 * (
                 (self.affinity[i] - self.similarity[i])
-                * y_diff
-                * ((1 + np.linalg.norm(y_diff) ** 2) ** (-1))
+                @ y_diff
+                @ ((1 + np.linalg.norm(y_diff, axis=0) ** 2) ** (-1))
             )
         return grad
 
 
-# --------------BLOBS--------------
 M = 100
-X_blobs, y_blobs = make_blobs(
-    M, n_features=4, random_state=78, cluster_std=0.6, centers=4
-)
-plt.figure(figsize=(16, 8))
-plt.scatter(X_blobs[:, 0], X_blobs[:, 1], c=y_blobs)
-plt.show()
+X_digits, y_digits = load_digits(return_X_y=True)
 
-_tsne = _TSNE(n_components=4)
-_tsne.fit_transform(X_blobs)
-_y_blobs_pred = _tsne.y
+# tsne = TSNE(n_components=10, init="pca", method="exact")
+# X_new = tsne.fit_transform(X_digits[:M])
 
-plt.figure(figsize=(16, 8))
-plt.scatter(X_blobs[:, 0], X_blobs[:, 1], c=_y_blobs_pred)
-plt.show()
+_tsne = _TSNE(n_components=10)
+X_new = _tsne.fit_transform(X_digits[:M])
+print(X_new)
