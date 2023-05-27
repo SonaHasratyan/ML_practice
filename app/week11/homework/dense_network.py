@@ -20,78 +20,54 @@
 
 import numpy as np
 from sklearn.datasets import make_regression
-from sklearn.metrics import mean_squared_error
-
-
-# todo delete v
-class Neuron:
-    def __init__(self, alpha: float = 0.03, n_iter: int = 1000, bias: bool = False):
-        self.W = None
-        self.m = None
-        self.alpha = alpha
-        self.n_iter = n_iter
-        self.next_neuron_derivative = 1
-
-    def call(self, X: np.ndarray, y: np.ndarray = None, training: bool = False):
-        self.m = X.shape[0]
-
-        if training:
-            y = y.reshape(-1, 1)
-
-            self.W = np.random.uniform(size=X.shape[1]).reshape(-1, 1)
-            for _ in range(self.n_iter):
-                y_pred = X @ self.W
-                self.W -= (2 * self.alpha * X.T @ (y_pred - y)) / self.m
-        else:
-            return X @ self.W
-
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
 
 class DenseLayer:
     def __init__(
         self, units: int = 1, activation: str = "identity", last_layer: bool = False
     ):
-        self.units = units + 1
+        self.units = units
         self.activation = activation
         self.last_layer = last_layer
         self.derivative = 1
         self.next_layer_derivative = 1
-        self.lr = 0.03
+        self.lr = 0.00003
 
         self.m = None
-        self.neurons = np.array(self.units)
-
-        self.__init_neurons()
 
         self.X = None
         self.y = None
-        self.W = np.random.rand(self.m, self.units)
+        self.W = None
+
         self.X_new = None
 
-    def call(self, X, y, lr):
+    def call(self, X: np.ndarray, y: np.ndarray, lr: float, is_train: bool = True):
         self.X = X
-        # todo: make y last_layer exclusive
-        self.y = y
-        self.lr = lr
-
         self.m = self.X.shape[0]
 
-        self.X = np.concatenate([np.ones(self.m)[:, np.newaxis], self.X], axis=1)
-        XW = self.X @ self.W
-        if self.last_layer:
-            self.derivative = 2 * (XW - self.y)
-            self.X_new = (XW - self.y) ** 2
-        else:
-            self.derivative = XW @ self.next_layer_derivative
-            self.X_new = XW
+        if not self.last_layer:
+            self.X = np.concatenate([np.ones(self.m)[:, np.newaxis], self.X], axis=1)
+            self.units += 1
 
-        self.W -= (self.lr * self.derivative) / self.m
-        # todo: we are here
+        if is_train:
+            self.y = y
+            self.lr = lr
 
-    def __init_neurons(self):
-        self.neurons[0] = Neuron(bias=True)
+            self.W = np.random.rand(self.units, self.X.shape[1])
 
-        for i in range(1, self.units):
-            self.neurons[i] = Neuron()
+            if self.last_layer:
+                self.derivative = 2 * (self.X @ self.W.T - self.y)
+
+        self.X_new = self.X @ self.W.T
+
+    def backpropagation(self):
+        self.__calc_derivative()
+        self.W -= (self.lr * np.sum(self.derivative, axis=0)).reshape(-1, 1) / self.m
+
+    def __calc_derivative(self):
+        self.derivative = self.X_new * self.next_layer_derivative[:, 0].reshape(-1, 1)
 
 
 class DenseNetwork:
@@ -100,7 +76,7 @@ class DenseNetwork:
         network: list,
         is_regression: bool = True,
         n_iter: int = 100,
-        lr: float = 0.03,
+        lr: float = 0.00003,
     ):
         self.network = network
         self.is_regression = is_regression
@@ -110,20 +86,58 @@ class DenseNetwork:
         self.X = None
         self.y = None
 
-    def call(self, X: np.ndarray, y: np.ndarray):
+        self.n_layers = len(self.network)
+
+    def call(self, X: np.ndarray, y: np.ndarray = None, is_train: bool = True):
         self.X = X
+        
+        if not is_train:
+            self.network[0].call(X, y, self.lr, is_train)
+
+            for _ in range(self.n_iter):
+
+                for i in range(1, self.n_layers):
+                    self.network[i].call(self.network[i - 1].X_new, y, self.lr, is_train)
+
+            return self.network[-1].X_new
+
         self.y = y
 
-        self.network[0].call(X, y)
-        for i in range(1, len(self.network)):
-            self.network[i].call(self.network[i - 1].X_new, y, self.lr)
-            self.network[i - 1].next_layer_derivative = self.network[i].derivative
+        self.network[0].call(X, y, self.lr)
 
+        for _ in range(self.n_iter):
+
+            for i in range(1, self.n_layers):
+                self.network[i].call(self.network[i - 1].X_new, y, self.lr)
+
+            for i in range(1, self.n_layers):
+                self.network[self.n_layers - i - 1].next_layer_derivative = self.network[self.n_layers - i].derivative
+                self.network[self.n_layers - i - 1].backpropagation()
+
+        return self.network[-1].X_new
+
+
+np.random.seed(78)
+
+X, y = make_regression(n_samples=1000, n_features=4, n_informative=3, n_targets=1)
+y = y.reshape(-1, 1)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=78)
+
+scaler = MinMaxScaler()
+scaler.fit(X_train)
+scaler.transform(X_train)
+scaler.transform(X_test)
 
 model = DenseNetwork(
     [
         DenseLayer(2),
         DenseLayer(3),
-        DenseLayer(4, last_layer=True),
+        DenseLayer(1, last_layer=True),
     ]
 )
+
+model.call(X_train, y_train, is_train=True)
+y_pred = model.call(X_test, is_train=False)
+print(mean_squared_error(y_pred, y_test))
+print(r2_score(y_pred, y_test))
