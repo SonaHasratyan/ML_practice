@@ -24,6 +24,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 
+
 class DenseLayer:
     def __init__(
         self, units: int = 1, activation: str = "identity", last_layer: bool = False
@@ -90,14 +91,15 @@ class DenseNetwork:
 
     def call(self, X: np.ndarray, y: np.ndarray = None, is_train: bool = True):
         self.X = X
-        
+
         if not is_train:
             self.network[0].call(X, y, self.lr, is_train)
 
             for _ in range(self.n_iter):
-
                 for i in range(1, self.n_layers):
-                    self.network[i].call(self.network[i - 1].X_new, y, self.lr, is_train)
+                    self.network[i].call(
+                        self.network[i - 1].X_new, y, self.lr, is_train
+                    )
 
             return self.network[-1].X_new
 
@@ -106,12 +108,13 @@ class DenseNetwork:
         self.network[0].call(X, y, self.lr)
 
         for _ in range(self.n_iter):
-
             for i in range(1, self.n_layers):
                 self.network[i].call(self.network[i - 1].X_new, y, self.lr)
 
             for i in range(1, self.n_layers):
-                self.network[self.n_layers - i - 1].next_layer_derivative = self.network[self.n_layers - i].derivative
+                self.network[
+                    self.n_layers - i - 1
+                ].next_layer_derivative = self.network[self.n_layers - i].derivative
                 self.network[self.n_layers - i - 1].backpropagation()
 
         return self.network[-1].X_new
