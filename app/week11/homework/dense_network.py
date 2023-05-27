@@ -142,5 +142,5 @@ model = DenseNetwork(
 
 model.call(X_train, y_train, is_train=True)
 y_pred = model.call(X_test, is_train=False)
-print(mean_squared_error(y_pred, y_test))
-print(r2_score(y_pred, y_test))
+print(mean_squared_error(y_test, y_pred))
+print(r2_score(y_test, y_pred))
