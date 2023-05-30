@@ -23,6 +23,10 @@ from sklearn.feature_selection import SelectFromModel
 from sklearn.impute import KNNImputer
 from sklearn.metrics import roc_auc_score, confusion_matrix, roc_curve
 from matplotlib import pyplot
+from sklearn.utils import shuffle
+
+tf.random.set_seed(78)
+np.random.seed(78)
 
 
 def threshold_selection(model, X_train, y_train):
@@ -240,6 +244,7 @@ class Preprocessor:
 df = pd.read_csv("hospital_deaths_train.csv")
 y = df["In-hospital_death"]
 X = df.drop("In-hospital_death", axis=1)
+X, y = shuffle(X, y, random_state=78)
 
 # y.to_numpy()
 # X.to_numpy()
@@ -260,7 +265,7 @@ X_val = preprocessor.transform(X_val)
 
 model = Sequential(
     [
-        Dense(1, activation="relu", name="layer1"),
+        Dense(5, activation="relu", name="layer1"),
         # Dense(3, activation="relu", name="layer2"),
         Dense(1, activation="sigmoid", name="layer3", use_bias=False),
     ]
@@ -269,7 +274,7 @@ model = Sequential(
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=[AUC()])
 
 
-model.fit(X_train, y_train, epochs=20, batch_size=32)
+model.fit(X_train, y_train, epochs=1000, batch_size=64)
 
 threshold = threshold_selection(model, X_train, y_train)
 y_val_pred = model.predict(X_val)
