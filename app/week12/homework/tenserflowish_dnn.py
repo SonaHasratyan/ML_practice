@@ -9,3 +9,17 @@
        (e.g., tf.keras.layers.Dense)
      - if you want to use anything else from tf, ask me, maybe I forgot to add something in this list
 """
+
+
+import tensorflow as tf
+
+
+class Tenserflowish_DNN:
+    def __init__(self):
+        pass
+
+    def call(self):
+        pass
+
+    def fit(self):
+        pass
