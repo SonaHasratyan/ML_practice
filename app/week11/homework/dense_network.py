@@ -46,7 +46,9 @@ class DenseLayer:
 
         self.X_new = None
 
-    def call(self, X: np.ndarray, y: np.ndarray, lr: float = 0.003, is_train: bool = True):
+    def call(
+        self, X: np.ndarray, y: np.ndarray, lr: float = 0.003, is_train: bool = True
+    ):
         self.X = X
         self.m = self.X.shape[0]
 
@@ -63,7 +65,7 @@ class DenseLayer:
                 self.W = np.random.rand(self.X.shape[1], self.units)
 
             if self.last_layer:
-                L = (2 * (self.X @ self.W - self.y))
+                L = 2 * (self.X @ self.W - self.y)
                 self.grad = self.X.T @ L
                 self.prev_layer_grad = L @ self.W.T
 
@@ -122,7 +124,9 @@ class DenseNetwork:
                 self.network[i].call(self.network[i - 1].X_new, y, self.lr)
 
             for i in range(1, self.n_layers):
-                self.network[self.n_layers - i - 1].next_layer_grad = self.network[self.n_layers - i].prev_layer_grad
+                self.network[self.n_layers - i - 1].next_layer_grad = self.network[
+                    self.n_layers - i
+                ].prev_layer_grad
                 self.network[self.n_layers - i - 1].backpropagation()
 
             print(mean_squared_error(y, self.network[-1].X_new))
@@ -138,7 +142,9 @@ X, y = shuffle(X, y, random_state=78)
 
 y = y.reshape(-1, 1)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=78, test_size=0.2)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, random_state=78, test_size=0.2
+)
 
 scaler = MinMaxScaler()
 scaler.fit(X_train)

@@ -77,7 +77,6 @@ class Preprocessor:
         self.imputer = KNNImputer(n_neighbors=2)
 
     def fit(self, X_train, y_train):
-
         # Just in case checking whether there are any data points with nan labels, if so, remove them
         if y_train.isna().sum() != 0:
             y_train.drop(y_train.isna(), inplace=True)
@@ -117,7 +116,6 @@ class Preprocessor:
         return self.X_test
 
     def __regularize_data(self, X):
-
         print(f"Number of columns BEFORE dropping: {len(X.columns)}")
         X = X[self.selected_features].copy()
 
@@ -276,7 +274,7 @@ model = Sequential(
     ]
 )
 
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=[AUC()])
+model.compile(optimizer="adam", loss="binary_crossentropy", metrics=[AUC()])
 
 
 model.fit(X_train, y_train, epochs=1000, batch_size=64)
@@ -303,4 +301,3 @@ print("------------------TEST---------------------")
 
 print("roc_auc_score", roc_auc_score(y_test, predictions))
 print("confusion_matrix", confusion_matrix(y_test, predictions))
-
