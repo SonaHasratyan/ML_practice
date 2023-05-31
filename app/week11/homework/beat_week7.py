@@ -13,6 +13,7 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.metrics import AUC
 from keras import regularizers
+from keras.initializers import glorot_uniform
 
 import numpy as np
 import pandas as pd
@@ -244,23 +245,27 @@ class Preprocessor:
 df = pd.read_csv("hospital_deaths_train.csv")
 y = df["In-hospital_death"]
 X = df.drop("In-hospital_death", axis=1)
+
 X, y = shuffle(X, y, random_state=78)
 
 # y.to_numpy()
 # X.to_numpy()
 
-X_train, X_val, y_train, y_val = train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=78,
-    stratify=y,
-)
+# X_train, X_val, y_train, y_val = train_test_split(
+#     X,
+#     y,
+#     test_size=0.2,
+#     random_state=78,
+#     stratify=y,
+# )
+
+X_train, y_train = X, y
+
 
 preprocessor = Preprocessor()
 preprocessor.fit(X_train, y_train)
 X_train = preprocessor.transform(X_train)
-X_val = preprocessor.transform(X_val)
+# X_val = preprocessor.transform(X_val)
 
 
 model = Sequential(
@@ -277,9 +282,25 @@ model.compile(optimizer='adam', loss='binary_crossentropy', metrics=[AUC()])
 model.fit(X_train, y_train, epochs=1000, batch_size=64)
 
 threshold = threshold_selection(model, X_train, y_train)
-y_val_pred = model.predict(X_val)
+y_val_pred = model.predict(X_train)
+
+
 predictions = (y_val_pred > threshold).astype(int)
 
 
-print("roc_auc_score", roc_auc_score(y_val, predictions))
-print("confusion_matrix", confusion_matrix(y_val, predictions))
+print("roc_auc_score", roc_auc_score(y_train, predictions))
+print("confusion_matrix", confusion_matrix(y_train, predictions))
+
+df_test = pd.read_csv("hospital_deaths_test.csv")
+y_test = df_test["In-hospital_death"]
+X_test = df_test.drop("In-hospital_death", axis=1)
+X_test = preprocessor.transform(X_test)
+y_test_pred = model.predict(X_test)
+
+predictions = (y_test_pred > threshold).astype(int)
+
+print("------------------TEST---------------------")
+
+print("roc_auc_score", roc_auc_score(y_test, predictions))
+print("confusion_matrix", confusion_matrix(y_test, predictions))
+
