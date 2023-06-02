@@ -13,18 +13,16 @@ from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 
-# todo close v
-# np.seterr(all='raise')
 np.random.seed(78)
 
 
 class DenseLayer:
     def __init__(self, input_size, output_size, activation=None):
-        self.weights = np.random.randn(input_size, output_size)
+        self.weights = np.random.randn(input_size, output_size) * 0.01
         self.biases = np.zeros(output_size)
         self.activation = activation
 
-        self.__activations = {None: Identity(), "sigmoid": Sigmoid(), "relu": ReLu()}
+        self.__activations = {None: Linear(), "sigmoid": Sigmoid(), "relu": ReLu()}
 
         if self.activation not in self.__activations:
             raise ValueError(
@@ -104,7 +102,7 @@ class ReLu(Activation):
         return X >= 0
 
 
-class Identity(Activation):
+class Linear(Activation):
     def __call__(self, X):
         return X
 
@@ -137,11 +135,11 @@ y_pred_lr = lr_model.predict(X_test_scaled)
 
 # Train the DenseNetwork implemented from scratch
 dense_net = MoreDenseNetwork()
-dense_net.add_layer(DenseLayer(10, 30, activation="relu"))
-dense_net.add_layer(DenseLayer(30, 1))
+dense_net.add_layer(DenseLayer(10, 10, activation="relu"))
+dense_net.add_layer(DenseLayer(10, 1))
 
 # Train the DenseNetwork using gradient descent
-learning_rate = 0.003
+learning_rate = 0.001
 num_epochs = 1000
 for epoch in range(num_epochs):
     # feedforward pass
@@ -149,8 +147,8 @@ for epoch in range(num_epochs):
 
     # Compute loss (mean squared error)
     loss = mean_squared_error(y_train, y_pred)
-    if epoch == 400:
-        learning_rate /= 10
+    # if epoch == 400:
+    #     learning_rate /= 10
     print(f"epoch {epoch}:{loss}")
     # backpropagation pass
     grad_output = 2 * (y_pred - y_train) / len(X_train_scaled)
