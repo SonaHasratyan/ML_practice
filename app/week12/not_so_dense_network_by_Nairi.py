@@ -81,7 +81,7 @@ for epoch in range(num_epochs):
 
     # Compute loss (mean squared error)
     loss = np.mean((y_pred - y_train) ** 2)
-    #     print(f'epoch {epoch}:{loss}')
+    print(f'epoch {epoch}:{loss}')
     # Backward pass
     grad_output = 2 * (y_pred - y_train) / len(X_train_scaled)
     dense_net.backward(grad_output, learning_rate)

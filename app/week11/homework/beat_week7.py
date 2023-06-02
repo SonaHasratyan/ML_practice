@@ -12,8 +12,8 @@ import tensorflow as tf
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.metrics import AUC
-from keras import regularizers
-from keras.initializers import glorot_uniform
+# from keras import regularizers
+# from keras.initializers import glorot_uniform
 
 import numpy as np
 import pandas as pd
