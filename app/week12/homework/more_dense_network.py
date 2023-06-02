@@ -12,9 +12,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
 import numpy as np
+
 # todo close v
 # np.seterr(all='raise')
 np.random.seed(78)
+
 
 class DenseLayer:
     def __init__(self, input_size, output_size, activation=None):
@@ -22,15 +24,13 @@ class DenseLayer:
         self.biases = np.zeros(output_size)
         self.activation = activation
 
-        self.__activations = {
-            None: Identity(),
-            "sigmoid": Sigmoid(),
-            "relu": ReLu()
-        }
+        self.__activations = {None: Identity(), "sigmoid": Sigmoid(), "relu": ReLu()}
 
         if self.activation not in self.__activations:
-            raise ValueError(f"There is no activation like {self.activation}. "
-                             f"Please provide one of these {self.__activations} or None")
+            raise ValueError(
+                f"There is no activation like {self.activation}. "
+                f"Please provide one of these {self.__activations} or None"
+            )
 
         self.activation = self.__activations[self.activation]
 
@@ -44,14 +44,15 @@ class DenseLayer:
         for i in range(self.output.shape[1]):
             self.output[:, i] = self.activation(self.output[:, i])
 
-
         return self.output
 
     def backpropagation(self, grad_output, learning_rate):
         grad_weights = self.inputs.T @ grad_output
         grad_biases = np.sum(grad_output, axis=0)
 
-        grad_input = (grad_output * self.activation.derivative(self.output)) @ self.weights.T
+        grad_input = (
+            grad_output * self.activation.derivative(self.output)
+        ) @ self.weights.T
 
         self.weights -= learning_rate * grad_weights
         self.biases -= learning_rate * grad_biases
@@ -147,7 +148,7 @@ for epoch in range(num_epochs):
     loss = mean_squared_error(y_train, y_pred)
     if epoch % 100 == 0 and epoch <= 600:
         learning_rate /= 2
-    print(f'epoch {epoch}:{loss}')
+    print(f"epoch {epoch}:{loss}")
     # backpropagation pass
     grad_output = 2 * (y_pred - y_train) / len(X_train_scaled)
     dense_net.backpropagation(grad_output, learning_rate)
