@@ -78,10 +78,10 @@ class MoreDenseNetwork:
 
 class Activation:
     def __call__(self, X):
-        return (X >= 0) * X
+        pass
 
     def derivative(self, X):
-        return X >= 0
+        pass
 
 
 class Sigmoid(Activation):
@@ -94,10 +94,10 @@ class Sigmoid(Activation):
 
 class ReLu(Activation):
     def __call__(self, X):
-        pass
+        return (X >= 0) * X
 
     def derivative(self, X):
-        pass
+        return X >= 0
 
 
 class Identity(Activation):
@@ -133,11 +133,11 @@ y_pred_lr = lr_model.predict(X_test_scaled)
 
 # Train the DenseNetwork implemented from scratch
 dense_net = MoreDenseNetwork()
-dense_net.add_layer(DenseLayer(10, 10, activation="sigmoid"))
-dense_net.add_layer(DenseLayer(10, 1))
+dense_net.add_layer(DenseLayer(10, 30, activation="relu"))
+dense_net.add_layer(DenseLayer(30, 1))
 
 # Train the DenseNetwork using gradient descent
-learning_rate = 0.01
+learning_rate = 0.03
 num_epochs = 1000
 for epoch in range(num_epochs):
     # feedforward pass
@@ -145,8 +145,8 @@ for epoch in range(num_epochs):
 
     # Compute loss (mean squared error)
     loss = mean_squared_error(y_train, y_pred)
-    # if epoch == 50:
-    #     learning_rate /= 10
+    if epoch == 400:
+        learning_rate /= 10
     print(f"epoch {epoch}:{loss}")
     # backpropagation pass
     grad_output = 2 * (y_pred - y_train) / len(X_train_scaled)
