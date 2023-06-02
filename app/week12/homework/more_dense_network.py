@@ -47,6 +47,10 @@ class DenseLayer:
         return self.output
 
     def backpropagation(self, grad_output, learning_rate):
+        # activation_derivative = np.array(self.output.shape)
+        # for i in range(self.output.shape[1]):
+        #     activation_derivative[:, i] = self.activation.derivative(self.output[:, i])
+
         activation_derivative = self.activation.derivative(self.output)
         grad_weights = self.inputs.T @ (grad_output * activation_derivative)
         grad_biases = np.sum(grad_output * activation_derivative, axis=0)
@@ -137,7 +141,7 @@ dense_net.add_layer(DenseLayer(10, 30, activation="relu"))
 dense_net.add_layer(DenseLayer(30, 1))
 
 # Train the DenseNetwork using gradient descent
-learning_rate = 0.03
+learning_rate = 0.003
 num_epochs = 1000
 for epoch in range(num_epochs):
     # feedforward pass
