@@ -45,10 +45,6 @@ class DenseLayer:
         return self.output
 
     def backpropagation(self, grad_output, learning_rate):
-        # activation_derivative = np.array(self.output.shape)
-        # for i in range(self.output.shape[1]):
-        #     activation_derivative[:, i] = self.activation.derivative(self.output[:, i])
-
         activation_derivative = self.activation.derivative(self.output)
         grad_weights = self.inputs.T @ (grad_output * activation_derivative)
         grad_biases = np.sum(grad_output * activation_derivative, axis=0)
