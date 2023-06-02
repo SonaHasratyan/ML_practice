@@ -47,12 +47,11 @@ class DenseLayer:
         return self.output
 
     def backpropagation(self, grad_output, learning_rate):
-        grad_weights = self.inputs.T @ grad_output
-        grad_biases = np.sum(grad_output, axis=0)
+        activation_derivative = self.activation.derivative(self.output)
+        grad_weights = self.inputs.T @ (grad_output * activation_derivative)
+        grad_biases = np.sum(grad_output * activation_derivative, axis=0)
 
-        grad_input = (
-            grad_output * self.activation.derivative(self.output)
-        ) @ self.weights.T
+        grad_input = (grad_output * activation_derivative) @ self.weights.T
 
         self.weights -= learning_rate * grad_weights
         self.biases -= learning_rate * grad_biases
@@ -79,10 +78,10 @@ class MoreDenseNetwork:
 
 class Activation:
     def __call__(self, X):
-        pass
+        return (X >= 0) * X
 
     def derivative(self, X):
-        pass
+        return X >= 0
 
 
 class Sigmoid(Activation):
@@ -146,8 +145,8 @@ for epoch in range(num_epochs):
 
     # Compute loss (mean squared error)
     loss = mean_squared_error(y_train, y_pred)
-    if epoch % 100 == 0 and epoch <= 600:
-        learning_rate /= 2
+    # if epoch == 50:
+    #     learning_rate /= 10
     print(f"epoch {epoch}:{loss}")
     # backpropagation pass
     grad_output = 2 * (y_pred - y_train) / len(X_train_scaled)
