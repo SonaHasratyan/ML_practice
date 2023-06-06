@@ -36,9 +36,8 @@ class TenserflowishLayer(tf.Module):
                 f"Please provide one of these {self.__activations} or None"
             )
 
-        self.activation = self.__activations[self.activation]
-
-        self.trainable_variables([self.weights, self.biases])
+        self.trainable_variables.append(self.weights)
+        self.trainable_variables.append(self.biases)
 
         self.output = None
         self.inputs = None
@@ -48,14 +47,14 @@ class TenserflowishLayer(tf.Module):
         self.output = inputs @ self.weights + self.biases
 
         for i in range(self.output.shape[1]):
-            self.output[:, i] = self.activation(self.output[:, i])
+            self.output[:, i] = self.__activations[self.activation](self.output[:, i])
 
         return self.output
 
     def backpropagation(self, grad_output, learning_rate):
 
         with tf.GradientTape() as tape:
-            activation = self.activation(self.output)
+            activation = self.__activations[self.activation](self.output)
 
         activation_derivative = tape.gradient(activation, self.trainable_variables)
 
@@ -70,7 +69,7 @@ class TenserflowishLayer(tf.Module):
         return grad_input
 
 
-class TenserflowishDNN:
+class TenserflowishDNN(tf.Module):
     def __init__(self):
         self.layers = []
 
@@ -85,6 +84,25 @@ class TenserflowishDNN:
     def backpropagation(self, grad_output, learning_rate):
         for layer in reversed(self.layers):
             grad_output = layer.backpropagation(grad_output, learning_rate)
+
+    def train(self, X_train, y_train):
+        # Train the DenseNetwork using gradient descent
+        learning_rate = 0.003
+        num_epochs = 1000
+        for epoch in range(num_epochs):
+            # feedforward pass
+            y_pred = tf.Variable(dense_net.feedforward(X_train))
+
+            # Compute loss (mean squared error)
+            if epoch == 400:
+                learning_rate /= 10
+            print(f"epoch {epoch}:{loss}")
+
+            with tf.GradientTape() as tape:
+                loss = tf.reduce_mean((y_pred - y_train) ** 2) / len(X_train)
+
+            grad_output = tape.gradient(loss, self.trainable_variables)
+            dense_net.backpropagation(grad_output, learning_rate)
 
 
 # Generate synthetic dataset
@@ -118,24 +136,7 @@ dense_net = TenserflowishDNN()
 dense_net.add_layer(TenserflowishLayer(10, 30, activation="relu"))
 dense_net.add_layer(TenserflowishLayer(30, 1))
 
-# Train the DenseNetwork using gradient descent
-learning_rate = 0.003
-num_epochs = 1000
-for epoch in range(num_epochs):
-    # feedforward pass
-    y_pred = tf.Variable(dense_net.feedforward(X_train_scaled))
-
-    # Compute loss (mean squared error)
-    if epoch == 400:
-        learning_rate /= 10
-    print(f"epoch {epoch}:{loss}")
-
-    # backpropagation pass
-    with tf.GradientTape() as tape:
-        loss = tf.reduce_mean((y_pred - y_train) ** 2)
-
-    grad_output = tape.gradient(loss, y_pred) / len(X_train_scaled)
-    dense_net.backpropagation(grad_output, learning_rate)
+dense_net.train(X_train_scaled, y_train)
 
 # Predict with the DenseNetwork
 y_pred_dense = dense_net.feedforward(X_test_scaled)
