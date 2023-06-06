@@ -27,12 +27,12 @@ class TenserflowishLayer(tf.Module):
         self.weights = tf.Variable(tf.random.normal([input_size, output_size]), name="W")
         self.biases = tf.Variable(tf.zeros([output_size]), name="b")
         self.activation = activation
-        self.__activations = {"linear": linear, "sigmoid": sigmoid, "relu": relu}
+        self.activations = {"linear": linear, "sigmoid": sigmoid, "relu": relu}
 
-        if self.activation not in self.__activations:
+        if self.activation not in self.activations:
             raise ValueError(
                 f"There is no activation like {self.activation}. "
-                f"Please provide one of these {self.__activations} or None"
+                f"Please provide one of these {self.activations} or None"
             )
 
         # by default added as they exist in init
@@ -46,7 +46,7 @@ class TenserflowishLayer(tf.Module):
         self.inputs = inputs
         self.output = inputs @ self.weights + self.biases
 
-        self.output = self.__activations[self.activation](self.output)
+        self.output = self.activations[self.activation](self.output)
 
         return self.output
 
@@ -66,23 +66,33 @@ class TenserflowishDNN(tf.Module):
 
     def train(self, X_train, y_train):
         # Train the DenseNetwork using gradient descent
-        learning_rate = 0.003
+        learning_rate = 0.03
         num_epochs = 1000
         for epoch in range(num_epochs):
-            if epoch == 400:
-                learning_rate /= 10
 
             with tf.GradientTape() as tape:
-                y_pred = tf.Variable(self.feedforward(X_train))
+                for i, layer in enumerate(self.layers):
+                    if i != 0:
+                        inputs = self.layers[i-1].output
+                    else:
+                        inputs = X_train
+
+                    layer.inputs = inputs
+                    layer.output = inputs @ layer.weights + layer.biases
+
+                    layer.output = layer.activations[layer.activation](layer.output)
+
+                y_pred = self.layers[-1].output
+
                 loss = (y_pred - y_train) ** 2
 
-            mse = tf.reduce_mean(loss) / len(X_train)
-            grad_output = tape.gradient(loss, self.trainable_variables,
-                                        unconnected_gradients=tf.UnconnectedGradients.ZERO)
+                mse = tf.reduce_mean(loss) / len(X_train)
+
+            grad_output = tape.gradient(mse, self.trainable_variables)
 
             for i, layer in enumerate(self.layers):
-                layer.weights = layer.weights - learning_rate * grad_output[2 * i + 1]
-                layer.biases = layer.biases - learning_rate * grad_output[2 * i]
+                layer.weights.assign(layer.weights - learning_rate * grad_output[2 * i + 1])
+                layer.biases.assign(layer.biases - learning_rate * grad_output[2 * i])
 
             print(f"epoch {epoch}:{mse}")
 
