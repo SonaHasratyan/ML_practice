@@ -9,7 +9,6 @@
        (e.g., tf.keras.layers.Dense)
 """
 
-
 import tensorflow as tf
 from keras.activations import sigmoid, relu, linear
 from sklearn.datasets import make_regression
@@ -23,12 +22,12 @@ np.random.seed(78)
 
 
 class TenserflowishLayer(tf.Module):
-    def __init__(self, input_size, output_size, activation=None):
+    def __init__(self, input_size, output_size, activation="linear"):
         super().__init__()
         self.weights = tf.Variable(tf.random.normal([input_size, output_size]), name="W")
         self.biases = tf.Variable(tf.zeros([output_size]), name="b")
         self.activation = activation
-        self.__activations = {None: linear, "sigmoid": sigmoid, "relu": relu}
+        self.__activations = {"linear": linear, "sigmoid": sigmoid, "relu": relu}
 
         if self.activation not in self.__activations:
             raise ValueError(
@@ -36,8 +35,9 @@ class TenserflowishLayer(tf.Module):
                 f"Please provide one of these {self.__activations} or None"
             )
 
-        self.trainable_variables.append(self.weights)
-        self.trainable_variables.append(self.biases)
+        # by default added as they exist in init
+        # self.trainable_variables.append(self.weights)
+        # self.trainable_variables.append(self.biases)
 
         self.output = None
         self.inputs = None
@@ -46,31 +46,14 @@ class TenserflowishLayer(tf.Module):
         self.inputs = inputs
         self.output = inputs @ self.weights + self.biases
 
-        for i in range(self.output.shape[1]):
-            self.output[:, i] = self.__activations[self.activation](self.output[:, i])
+        self.output = self.__activations[self.activation](self.output)
 
         return self.output
-
-    def backpropagation(self, grad_output, learning_rate):
-
-        with tf.GradientTape() as tape:
-            activation = self.__activations[self.activation](self.output)
-
-        activation_derivative = tape.gradient(activation, self.trainable_variables)
-
-        grad_weights = self.inputs.T @ (grad_output * activation_derivative)
-        grad_biases = np.sum(grad_output * activation_derivative, axis=0)
-
-        grad_input = (grad_output * activation_derivative) @ self.weights.T
-
-        self.weights -= learning_rate * grad_weights
-        self.biases -= learning_rate * grad_biases
-
-        return grad_input
 
 
 class TenserflowishDNN(tf.Module):
     def __init__(self):
+        super().__init__()
         self.layers = []
 
     def add_layer(self, layer):
@@ -81,28 +64,27 @@ class TenserflowishDNN(tf.Module):
             inputs = layer.feedforward(inputs)
         return inputs
 
-    def backpropagation(self, grad_output, learning_rate):
-        for layer in reversed(self.layers):
-            grad_output = layer.backpropagation(grad_output, learning_rate)
-
     def train(self, X_train, y_train):
         # Train the DenseNetwork using gradient descent
         learning_rate = 0.003
         num_epochs = 1000
         for epoch in range(num_epochs):
-            # feedforward pass
-            y_pred = tf.Variable(dense_net.feedforward(X_train))
-
-            # Compute loss (mean squared error)
             if epoch == 400:
                 learning_rate /= 10
-            print(f"epoch {epoch}:{loss}")
 
-            with tf.GradientTape() as tape:
-                loss = tf.reduce_mean((y_pred - y_train) ** 2) / len(X_train)
+                with tf.GradientTape() as tape:
+                    y_pred = tf.Variable(dense_net.feedforward(X_train))
+                    loss = (y_pred - y_train) ** 2
 
-            grad_output = tape.gradient(loss, self.trainable_variables)
-            dense_net.backpropagation(grad_output, learning_rate)
+                mse = tf.reduce_mean(loss) / len(X_train)
+                grad_output = tape.gradient(loss, self.trainable_variables,
+                                            unconnected_gradients=tf.UnconnectedGradients.ZERO)
+
+                for i, layer in enumerate(self.layers):
+                    layer.weights = layer.weights - learning_rate * grad_output[2 * i + 1]
+                    layer.biases = layer.biases - learning_rate * grad_output[2 * i]
+
+                print(f"epoch {epoch}:{mse}")
 
 
 # Generate synthetic dataset
