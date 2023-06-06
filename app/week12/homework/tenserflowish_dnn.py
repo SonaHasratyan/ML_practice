@@ -72,19 +72,19 @@ class TenserflowishDNN(tf.Module):
             if epoch == 400:
                 learning_rate /= 10
 
-                with tf.GradientTape() as tape:
-                    y_pred = tf.Variable(dense_net.feedforward(X_train))
-                    loss = (y_pred - y_train) ** 2
+            with tf.GradientTape() as tape:
+                y_pred = tf.Variable(self.feedforward(X_train))
+                loss = (y_pred - y_train) ** 2
 
-                mse = tf.reduce_mean(loss) / len(X_train)
-                grad_output = tape.gradient(loss, self.trainable_variables,
-                                            unconnected_gradients=tf.UnconnectedGradients.ZERO)
+            mse = tf.reduce_mean(loss) / len(X_train)
+            grad_output = tape.gradient(loss, self.trainable_variables,
+                                        unconnected_gradients=tf.UnconnectedGradients.ZERO)
 
-                for i, layer in enumerate(self.layers):
-                    layer.weights = layer.weights - learning_rate * grad_output[2 * i + 1]
-                    layer.biases = layer.biases - learning_rate * grad_output[2 * i]
+            for i, layer in enumerate(self.layers):
+                layer.weights = layer.weights - learning_rate * grad_output[2 * i + 1]
+                layer.biases = layer.biases - learning_rate * grad_output[2 * i]
 
-                print(f"epoch {epoch}:{mse}")
+            print(f"epoch {epoch}:{mse}")
 
 
 # Generate synthetic dataset
