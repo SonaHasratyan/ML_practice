@@ -28,45 +28,46 @@ class TenserflowishLayer(tf.Module):
         self.weights = tf.Variable(tf.random.normal([input_size, output_size]), name="W")
         self.biases = tf.Variable(tf.zeros([output_size]), name="b")
         self.activation = activation
+        self.__activations = {None: linear, "sigmoid": sigmoid, "relu": relu}
+
+        if self.activation not in self.__activations:
+            raise ValueError(
+                f"There is no activation like {self.activation}. "
+                f"Please provide one of these {self.__activations} or None"
+            )
+
+        self.activation = self.__activations[self.activation]
+
+        self.trainable_variables([self.weights, self.biases])
 
         self.output = None
         self.inputs = None
 
     def feedforward(self, inputs):
         self.inputs = inputs
-        self.output = tf.matmul(inputs, self.weights) + self.biases
+        self.output = inputs @ self.weights + self.biases
 
         for i in range(self.output.shape[1]):
-            self.output[:, i] = self.__set_activation(self.output[:, i])
+            self.output[:, i] = self.activation(self.output[:, i])
 
         return self.output
 
     def backpropagation(self, grad_output, learning_rate):
-        activation_derivative = None
-        with tf.GradientTape() as tape:
-            self.output
 
-        grad_weights = tf.matmul(self.inputs.T, (grad_output * activation_derivative))
+        with tf.GradientTape() as tape:
+            activation = self.activation(self.output)
+
+        activation_derivative = tape.gradient(activation, self.trainable_variables)
+
+        grad_weights = self.inputs.T @ (grad_output * activation_derivative)
         grad_biases = np.sum(grad_output * activation_derivative, axis=0)
 
-        grad_input = tf.matmul((grad_output * activation_derivative), self.weights.T)
+        grad_input = (grad_output * activation_derivative) @ self.weights.T
 
         self.weights -= learning_rate * grad_weights
         self.biases -= learning_rate * grad_biases
 
         return grad_input
-
-    def __set_activation(self, X):
-        if not self.activation:
-            return linear(X)
-        elif self.activation == "sigmoid":
-            return sigmoid(X)
-        elif self.activation == "relu":
-            return relu(X)
-        else:
-            raise ValueError(
-                f"There is no activation like {self.activation}."
-            )
 
 
 class TenserflowishDNN:
@@ -128,9 +129,10 @@ for epoch in range(num_epochs):
     if epoch == 400:
         learning_rate /= 10
     print(f"epoch {epoch}:{loss}")
+
     # backpropagation pass
     with tf.GradientTape() as tape:
-        loss = (y_pred - y_train) ** 2
+        loss = tf.reduce_mean((y_pred - y_train) ** 2)
 
     grad_output = tape.gradient(loss, y_pred) / len(X_train_scaled)
     dense_net.backpropagation(grad_output, learning_rate)
