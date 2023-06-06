@@ -66,7 +66,7 @@ class TenserflowishDNN(tf.Module):
 
     def train(self, X_train, y_train):
         # Train the DenseNetwork using gradient descent
-        learning_rate = 0.03
+        learning_rate = 0.003
         num_epochs = 1000
         for epoch in range(num_epochs):
 
@@ -86,7 +86,7 @@ class TenserflowishDNN(tf.Module):
 
                 loss = (y_pred - y_train) ** 2
 
-                mse = tf.reduce_mean(loss) / len(X_train)
+                mse = tf.reduce_mean(loss)
 
             grad_output = tape.gradient(mse, self.trainable_variables)
 
