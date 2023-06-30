@@ -5,11 +5,11 @@
 """
 
 import numpy as np
+from sklearn.metrics import mean_squared_error
 
 
 class RNNBlock:
     def __init__(self, f_W="tanh", state_size=32, learning_rate=0.03):
-        # todo: should we have num_hidden_statements?
 
         self.f_W = f_W
         self.state_size = state_size
@@ -18,27 +18,29 @@ class RNNBlock:
         self.learning_rate = learning_rate
 
         self.x = None
-        self.h_prev = None
-        self.y = None
+        self.h_prev = 0  # h_prev is the h_0 at the beginning
+        self.y_pred = None
         self.h_next = None
+        self.loss = None
+        self.grad = None
+        self.next_grad = None
 
         self.W_hx = None
-        self.W_hh = np.random.randn(self.state_size, self.state_size)
+        self.W_hh = 0.01 * np.random.randn(self.state_size, self.state_size)
         self.W_hy = None
-        self.bias_h = 0  # todo: ask/discuss dimensions
+        self.bias_h = 0
         self.bias_0 = 0
 
-    def feedforward(self, x, h_prev, y=None):
+    def feedforward(self, x, y=None):
         self.x = x
-        self.h_prev = h_prev
         self.y = y
 
         if not self.W_hh:
-            # todo: discuss initialization
             self.__init_weights()
 
         self.h_next = self.f_W(self.W_hh @ self.h_prev + self.W_hx @ self.x + self.bias_h)
-        self.y = self.W_hy @ self.h_next + self.bias_0
+        self.y_pred = self.W_hy @ self.h_next + self.bias_0
+        self.loss = mean_squared_error(self.y_pred, self.y)
 
     def backpropagation(self):
         # todo
@@ -49,8 +51,8 @@ class RNNBlock:
         if len(x_shape) == 2:
             x_shape = x_shape[1]
 
-        self.W_hx = np.random.randn(self.state_size, x_shape)
-        self.W_hy = np.random.randn(self.state_size, self.y.shape)
+        self.W_hx = 0.01 * np.random.randn(self.state_size, x_shape)
+        self.W_hy = 0.01 * np.random.randn(self.state_size, self.y.shape)
 
 
 class VanillaRNN:
@@ -60,22 +62,21 @@ class VanillaRNN:
         self.n = self.X.shape[1]
         self.n_iter = n_iter
 
-        self.RNNBlock = RNNBlock("tanh", state_size=8, learning_rate=0.03)
+        self.rnn_layers = []
 
         self.batch_size = batch_size if batch_size else self.n
 
     def train(self):
-        h_prev = 0  # h_prev is the h_0 at the beginning
-        # todo: should we keep rnns in a list, especially for the backprop?
+        for i in range(self.n):
+            self.rnn_layers.append(RNNBlock("tanh", state_size=8, learning_rate=0.03))
 
+        self.rnn_layers[0].feedforward(self.X[:, 0])
         for _ in range(self.n_iter):
-            for i in range(self.n):
-                batch_X = self.X[:, i:i + self.batch_size]
-                for x in batch_X:
-                    self.RNNBlock.feedforward(x, h_prev)
-                    h_prev = self.RNNBlock.h_next
-
-                self.RNNBlock.backpropagation()
+            for i in range(1, self.n):
+                for j in range(i, i + self.batch_size):
+                    self.rnn_layers[i].h_prev = self.rnn_layers[i - 1].h_next
+                    self.rnn_layers[j].feedforward(self.X[:, j])
+                    # todo
 
                 i += self.batch_size
 
