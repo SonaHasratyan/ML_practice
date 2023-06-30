@@ -1,14 +1,21 @@
+"""
+    The task is to train a next character prediction model by Vanilla RNN. As of training dataset you can select any
+    text you want (book may be an easy and efficient solution). Model structure (input, weights, output etc.) should
+    be as discussed during the practice.
+"""
+
 import numpy as np
 
 
 class RNNBlock:
-    def __init__(self, f_W="tanh", state_size=32):
+    def __init__(self, f_W="tanh", state_size=32, learning_rate=0.03):
         # todo: should we have num_hidden_statements?
 
         self.f_W = f_W
         self.state_size = state_size
         self.f_Ws = {None: Linear(), "sigmoid": Sigmoid(), "relu": ReLu(), "tanh": TanH()}
         self.f_W = self.f_Ws[self.f_W]
+        self.learning_rate = learning_rate
 
         self.x = None
         self.h_prev = None
@@ -18,7 +25,7 @@ class RNNBlock:
         self.W_hx = None
         self.W_hh = np.random.randn(self.state_size, self.state_size)
         self.W_hy = None
-        self.bias_h = 0  # todo: ask/discuss
+        self.bias_h = 0  # todo: ask/discuss dimensions
         self.bias_0 = 0
 
     def feedforward(self, x, h_prev, y=None):
@@ -27,6 +34,7 @@ class RNNBlock:
         self.y = y
 
         if not self.W_hh:
+            # todo: discuss initialization
             self.__init_weights()
 
         self.h_next = self.f_W(self.W_hh @ self.h_prev + self.W_hx @ self.x + self.bias_h)
@@ -52,7 +60,7 @@ class VanillaRNN:
         self.n = self.X.shape[1]
         self.n_iter = n_iter
 
-        self.RNNBlock = RNNBlock("tanh")
+        self.RNNBlock = RNNBlock("tanh", state_size=8, learning_rate=0.03)
 
         self.batch_size = batch_size if batch_size else self.n
 
@@ -110,4 +118,4 @@ class TanH(Activation):
         return np.tanh(X)
 
     def derivative(self, X):
-        return np.cosh(X) ** 2
+        return np.cosh(X) ** (-2)
