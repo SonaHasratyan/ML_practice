@@ -5,8 +5,41 @@
 """
 
 # import numpy as np  # relatively imported from activation
+# import string
+
 from sklearn.metrics import mean_squared_error
 from activation import *
+
+with open("dracula.txt") as dracula:
+    lines = dracula.readlines()
+
+removables = []
+for i in range(len(lines)):
+    lines[i] = lines[i].strip()
+    # lines[i] = lines[i].translate(str.maketrans('', '', string.punctuation))
+    if not lines[i] or lines[i] == "":
+        removables.append(i)
+
+removables = np.array(removables)
+for i in range(len(removables)):
+    del lines[removables[i]]
+    removables = removables - 1
+
+text = ""
+for line in lines:
+    add_at_beginning = "\n" if line[0].isupper() else " "
+    text += add_at_beginning + line
+text = text.strip()
+
+data = [i for i in text]
+input_size = 5
+
+dracula_X = [data[i:i + input_size] for i in range(len(data) - input_size + 1)]
+dracula_y = dracula_X[1:]
+dracula_X = dracula_X[:-1]
+
+print(dracula_X[0], dracula_y[0], sep="\n")
+print(dracula_X[-1], dracula_y[-1], sep="\n")
 
 
 class RNNBlock:
