@@ -81,7 +81,7 @@ class RNNBlock:
         self.W_hh = 0.01 * np.random.randn(self.state_size, self.state_size)
         self.W_hy = None
         self.b_h = 0.01 * np.random.randn(self.state_size)
-        self.b_0 = 0
+        self.b_0 = 0.01 * np.random.randn(self.state_size)
 
     def feedforward(self, x, y=None, weights_and_biases=None):
         self.x = x
@@ -131,6 +131,10 @@ class VanillaRNN:
 
         self.rnn_layers = []
 
+    # todo: cross entropy
+    # todo: adagrad
+    # todo: normalize
+    # todo: sample at the inference don't do softmax
     def train(self, X, y):
         self.X = np.array(X)
         self.y = np.array(y)
