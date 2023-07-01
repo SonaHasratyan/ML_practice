@@ -85,9 +85,7 @@ class RNNBlock:
                 self.b_0,
             ] = weights_and_biases
 
-        self.h_next = self.f_W(
-            self.W_hh @ self.h_prev + self.W_hx @ self.x + self.b_h
-        )
+        self.h_next = self.f_W(self.W_hh @ self.h_prev + self.W_hx @ self.x + self.b_h)
         self.y_pred = self.W_hy @ self.h_next + self.b_0
         self.loss = mean_squared_error(self.y_pred, self.y)
 
@@ -133,7 +131,9 @@ class VanillaRNN:
                 batch_loss = 0
                 for j in range(i, i + self.batch_size):
                     self.rnn_layers[i].h_prev = self.rnn_layers[i - 1].h_next
-                    self.rnn_layers[j].feedforward(self.X[:, j], self.y[j], weights_and_biases)
+                    self.rnn_layers[j].feedforward(
+                        self.X[:, j], self.y[j], weights_and_biases
+                    )
                     batch_loss += self.rnn_layers[j].loss
 
                 self.rnn_layers[i + self.batch_size - 1].backpropagation()
@@ -162,5 +162,3 @@ class VanillaRNN:
                 self.rnn_layers[i].W_hy,
                 self.rnn_layers[i].b_0,
             ] = weights_and_biases
-
-
