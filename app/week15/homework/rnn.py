@@ -5,10 +5,20 @@
 """
 
 # import numpy as np  # relatively imported from activation
-# import string
+import string
 
 from sklearn.metrics import mean_squared_error
 from activation import *
+
+from sklearn.preprocessing import OneHotEncoder
+
+ohe = OneHotEncoder(sparse=False)
+oheables = np.array([i for i in string.ascii_letters + string.digits + string.punctuation + " " + "\n"]).reshape(-1, 1)
+ohes = ohe.fit_transform(oheables)
+ohe_dict = {}
+for i in range(oheables.shape[0]):
+    ohe_dict.update({oheables[i][0]: ohes[i]})
+# print(ohe_dict)
 
 with open("dracula.txt") as dracula:
     lines = dracula.readlines()
@@ -32,14 +42,17 @@ for line in lines:
 text = text.strip()
 
 data = [i for i in text]
+
+data_ohe = [ohe_dict[i] for i in data]
 input_size = 5
+data = data_ohe
 
 dracula_X = [data[i:i + input_size] for i in range(len(data) - input_size + 1)]
 dracula_y = dracula_X[1:]
 dracula_X = dracula_X[:-1]
 
-print(dracula_X[0], dracula_y[0], sep="\n")
-print(dracula_X[-1], dracula_y[-1], sep="\n")
+# print(dracula_X[0], dracula_y[0], sep="\n")
+# print(dracula_X[-1], dracula_y[-1], sep="\n")
 
 
 class RNNBlock:
@@ -67,14 +80,14 @@ class RNNBlock:
         self.W_hx = None
         self.W_hh = 0.01 * np.random.randn(self.state_size, self.state_size)
         self.W_hy = None
-        self.b_h = 0
+        self.b_h = 0.01 * np.random.randn(self.state_size)
         self.b_0 = 0
 
     def feedforward(self, x, y=None, weights_and_biases=None):
         self.x = x
         self.y = y
 
-        if not self.W_hh:
+        if self.W_hh is None:
             self.__init_weights()
         elif weights_and_biases:
             [
@@ -109,30 +122,35 @@ class RNNBlock:
 
 
 class VanillaRNN:
-    def __init__(self, X, y, batch_size=None, n_iter=1000):
-        self.X = X
-        self.y = y
-        self.n = self.X.shape[1]
+    def __init__(self, batch_size=32, n_iter=1000):
+        self.batch_size = batch_size
         self.n_iter = n_iter
+
+        self.X = None
+        self.y = None
+        self.n = None
 
         self.rnn_layers = []
 
-        self.batch_size = batch_size if batch_size else self.n
+    def train(self, X, y):
+        self.X = np.array(X)
+        self.y = np.array(y)
+        self.n = self.X.shape[1]
+        self.batch_size = self.batch_size if self.batch_size else self.n
 
-    def train(self):
         for i in range(self.n):
             self.rnn_layers.append(RNNBlock("tanh", state_size=8, learning_rate=0.03))
 
         weights_and_biases = None
 
         for _ in range(self.n_iter):
-            self.rnn_layers[0].feedforward(self.X[:, 0], self.y[0], weights_and_biases)
+            self.rnn_layers[0].feedforward(self.X[0], self.y[0], weights_and_biases)
             for i in range(1, self.n):
                 batch_loss = 0
                 for j in range(i, i + self.batch_size):
                     self.rnn_layers[i].h_prev = self.rnn_layers[i - 1].h_next
                     self.rnn_layers[j].feedforward(
-                        self.X[:, j], self.y[j], weights_and_biases
+                        self.X[j], self.y[j], weights_and_biases
                     )
                     batch_loss += self.rnn_layers[j].loss
 
@@ -162,3 +180,7 @@ class VanillaRNN:
                 self.rnn_layers[i].W_hy,
                 self.rnn_layers[i].b_0,
             ] = weights_and_biases
+
+
+VRNN = VanillaRNN()
+VRNN.train(dracula_X, dracula_y)
