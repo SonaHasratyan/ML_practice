@@ -122,8 +122,7 @@ class RNNBlock:
 
 
 class VanillaRNN:
-    def __init__(self, batch_size=32, n_iter=1000):
-        self.batch_size = batch_size
+    def __init__(self,  n_iter=1000):
         self.n_iter = n_iter
 
         self.X = None
@@ -136,7 +135,6 @@ class VanillaRNN:
         self.X = np.array(X)
         self.y = np.array(y)
         self.n = self.X.shape[1]
-        self.batch_size = self.batch_size if self.batch_size else self.n
 
         for i in range(self.n):
             self.rnn_layers.append(RNNBlock("tanh", state_size=8, learning_rate=0.03))
@@ -144,22 +142,23 @@ class VanillaRNN:
         weights_and_biases = None
 
         for _ in range(self.n_iter):
-            self.rnn_layers[0].feedforward(self.X[0], self.y[0], weights_and_biases)
-            for i in range(1, self.n):
-                batch_loss = 0
-                for j in range(i, i + self.batch_size):
-                    self.rnn_layers[i].h_prev = self.rnn_layers[i - 1].h_next
-                    self.rnn_layers[j].feedforward(
-                        self.X[j], self.y[j], weights_and_biases
-                    )
-                    batch_loss += self.rnn_layers[j].loss
+            for j in range(self.X.shape[0]):
 
-                self.rnn_layers[i + self.batch_size - 1].backpropagation()
-                batch_grad = self.rnn_layers[i + 1].grad
-                for j in range(i, i + self.batch_size - 1):
-                    self.rnn_layers[i].grad_next = self.rnn_layers[i + 1].grad
-                    self.rnn_layers[j].backpropagation()
-                    batch_grad += self.rnn_layers[i + 1].grad
+                self.rnn_layers[0].feedforward(self.X[:, 0, :], self.y[0], weights_and_biases)
+                loss = 0
+                for i in range(1, self.n):
+                    self.rnn_layers[i].h_prev = self.rnn_layers[i - 1].h_next
+                    self.rnn_layers[i].feedforward(
+                        self.X[:, i, :], self.y[i], weights_and_biases
+                    )
+                    loss += self.rnn_layers[j].loss
+
+                self.rnn_layers[self.n - 1].backpropagation()
+                grad = self.rnn_layers[self.n - 1].grad
+                for i in reversed(range(0, self.n - 2)):
+                    self.rnn_layers[i].grad_next = self.rnn_layers[j + 1].grad
+                    self.rnn_layers[i].backpropagation()
+                    grad += self.rnn_layers[i].grad
 
                 weights_and_biases = [
                     self.rnn_layers[0].W_hh,
@@ -168,9 +167,7 @@ class VanillaRNN:
                     self.rnn_layers[0].W_hy,
                     self.rnn_layers[0].b_0,
                 ]
-                weights_and_biases -= 2 * self.rnn_layers[0].learning_rate * batch_grad
-
-                i += self.batch_size
+                weights_and_biases -= 2 * self.rnn_layers[0].learning_rate * grad
 
         for i in range(len(self.rnn_layers)):
             [
