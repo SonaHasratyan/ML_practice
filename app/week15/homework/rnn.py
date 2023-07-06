@@ -7,10 +7,16 @@
 # import numpy as np  # relatively imported from activation
 import string
 
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import log_loss  # CrossEntropy
+# from sklearn.metrics import mean_squared_error
 from activation import *
 
 from sklearn.preprocessing import OneHotEncoder
+from scipy.special import softmax
+from sklearn.utils.random import sample_without_replacement
+
+
+
 
 ohe = OneHotEncoder(sparse=False)
 oheables = np.array([i for i in string.ascii_letters + string.digits + string.punctuation + " " + "\n"]).reshape(-1, 1)
@@ -50,6 +56,7 @@ data = data_ohe
 dracula_X = [data[i:i + input_size] for i in range(len(data) - input_size + 1)]
 dracula_y = dracula_X[1:]
 dracula_X = dracula_X[:-1]
+
 
 # print(dracula_X[0], dracula_y[0], sep="\n")
 # print(dracula_X[-1], dracula_y[-1], sep="\n")
@@ -100,15 +107,19 @@ class RNNBlock:
 
         self.h_next = self.f_W(self.W_hh @ self.h_prev + self.W_hx @ self.x + self.b_h)
         self.y_pred = self.W_hy @ self.h_next + self.b_0
-        self.loss = mean_squared_error(self.y_pred, self.y)
+
+        # todo: sampling in inference
+
+        self.loss = log_loss(self.y, softmax(self.y_pred))
 
     def backpropagation(self):
+        ce_softmax_derivative = softmax(self.y_pred) - self.y
         self.grad = [
-            2 * (self.y_pred - self.y) * self.W_hy * self.f_W.derivative(self.x) * self.h_prev,  # W_hh
-            2 * (self.y_pred - self.y) * self.W_hy * self.f_W.derivative(self.x) * self.x,  # W_hx
-            2 * (self.y_pred - self.y) * self.W_hy * self.f_W.derivative(self.x),  # b_h
-            2 * (self.y_pred - self.y) * self.h_next,  # W_hy
-            2 * (self.y_pred - self.y),  # b_0
+            ce_softmax_derivative * self.W_hy * self.f_W.derivative(self.x) * self.h_prev,  # W_hh
+            ce_softmax_derivative * self.W_hy * self.f_W.derivative(self.x) * self.x,  # W_hx
+            ce_softmax_derivative * self.W_hy * self.f_W.derivative(self.x),  # b_h
+            ce_softmax_derivative * self.h_next,  # W_hy
+            ce_softmax_derivative,  # b_0
         ]
         self.grad += self.next_grad
 
@@ -122,7 +133,8 @@ class RNNBlock:
 
 
 class VanillaRNN:
-    def __init__(self,  n_iter=1000):
+    def __init__(self, n_iter=1000):
+        self.r = None
         self.n_iter = n_iter
 
         self.X = None
@@ -131,14 +143,19 @@ class VanillaRNN:
 
         self.rnn_layers = []
 
-    # todo: cross entropy
-    # todo: adagrad
-    # todo: normalize
+    def adagrad(self, theta, grad, epsilon=0.003, delta=1e-7):
+        self.r += grad * grad
+        update_theta = - (epsilon / (delta + self.r)) * grad
+
+        theta += update_theta
+        return theta
+
     # todo: sample at the inference don't do softmax
     def train(self, X, y):
         self.X = np.array(X)
         self.y = np.array(y)
         self.n = self.X.shape[1]
+        self.r = 0
 
         for i in range(self.n):
             self.rnn_layers.append(RNNBlock("tanh", state_size=8, learning_rate=0.03))
@@ -171,7 +188,7 @@ class VanillaRNN:
                     self.rnn_layers[0].W_hy,
                     self.rnn_layers[0].b_0,
                 ]
-                weights_and_biases -= 2 * self.rnn_layers[0].learning_rate * grad
+                weights_and_biases = self.adagrad(weights_and_biases, grad)
 
         for i in range(len(self.rnn_layers)):
             [
@@ -181,6 +198,9 @@ class VanillaRNN:
                 self.rnn_layers[i].W_hy,
                 self.rnn_layers[i].b_0,
             ] = weights_and_biases
+
+    def inference(self, X):
+        pass
 
 
 VRNN = VanillaRNN()
