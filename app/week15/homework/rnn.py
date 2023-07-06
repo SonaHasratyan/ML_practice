@@ -96,7 +96,8 @@ class RNNBlock:
 
         if self.W_hh is None:
             self.__init_weights()
-        elif weights_and_biases:
+
+        if weights_and_biases:
             [
                 self.W_hh,
                 self.W_hx,
@@ -200,7 +201,20 @@ class VanillaRNN:
             ] = weights_and_biases
 
     def inference(self, X):
-        pass
+        self.X = np.array(X)
+        self.n = self.X.shape[1]
+
+        for _ in range(self.n_iter):
+            for j in range(self.X.shape[0]):
+
+                self.rnn_layers[0].feedforward(self.X[:, 0, :], self.y[0])
+                loss = 0
+                for i in range(1, self.n):
+                    self.rnn_layers[i].h_prev = self.rnn_layers[i - 1].h_next
+                    self.rnn_layers[i].feedforward(
+                        self.X[:, i, :], self.y[i]
+                    )
+                    loss += self.rnn_layers[j].loss
 
 
 VRNN = VanillaRNN()
