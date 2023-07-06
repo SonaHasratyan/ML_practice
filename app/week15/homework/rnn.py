@@ -94,7 +94,7 @@ class RNNBlock:
         self.x = x
         self.y = y
 
-        if self.W_hh is None:
+        if self.W_hx is None:
             self.__init_weights()
 
         if weights_and_biases:
@@ -130,7 +130,7 @@ class RNNBlock:
             x_shape = x_shape[1]
 
         self.W_hx = 0.01 * np.random.randn(self.state_size, x_shape)
-        self.W_hy = 0.01 * np.random.randn(self.state_size, self.y.shape)
+        self.W_hy = 0.01 * np.random.randn(self.state_size, self.y.shape[0])
 
 
 class VanillaRNN:
